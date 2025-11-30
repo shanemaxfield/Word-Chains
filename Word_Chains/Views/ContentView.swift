@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject var freeRoamState = GameState()
+    @EnvironmentObject var gameState: EnhancedGameState
     @State private var dummyText = ""
     @FocusState private var dummyFocus: Bool
 
@@ -9,7 +9,7 @@ struct ContentView: View {
         ZStack {
             NavigationView {
                 PuzzleOfTheDayView()
-                    .environmentObject(freeRoamState)
+                    .environmentObject(gameState)
                     .navigationBarHidden(true)
             }
 
@@ -18,6 +18,21 @@ struct ContentView: View {
                 .focused($dummyFocus)
                 .opacity(0)
                 .frame(width: 0, height: 0)
+
+            // Achievement banner overlay
+            if gameState.achievementManager.showAchievementAlert,
+               let achievement = gameState.achievementManager.newlyUnlockedAchievement {
+                AchievementBanner(
+                    achievement: achievement,
+                    isShowing: $gameState.achievementManager.showAchievementAlert
+                )
+                .onTapGesture {
+                    // Dismiss on tap
+                    withAnimation {
+                        gameState.achievementManager.dismissAchievementAlert()
+                    }
+                }
+            }
         }
         .onAppear {
             print("🧪 .onAppear triggered — loading data")
@@ -61,5 +76,3 @@ struct ContentView: View {
         }
     }
 }
-
-

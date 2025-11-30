@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct FreeRoamView: View {
-    @EnvironmentObject var state: GameState
+    @EnvironmentObject var state: EnhancedGameState
     @Environment(\.presentationMode) var presentationMode
     @FocusState private var focusedIndex: Int?
     @State private var showSuccess: Bool = false
@@ -110,7 +110,9 @@ struct FreeRoamView: View {
                     showFreeRoamButton: !showMinimumChain,
                     showMinimumChain: showMinimumChain,
                     minimumChain: state.minimumPossibleChain,
-                    minimumChainGroups: showMinimumChain ? [state.minimumPossibleChain] : nil
+                    minimumChainGroups: showMinimumChain ? [state.minimumPossibleChain] : nil,
+                    streakManager: state.streakManager,
+                    shareText: state.generateShareableResult()
                 )
                 .zIndex(101)
             }
@@ -272,7 +274,7 @@ struct FreeRoamView: View {
             let gameLogic = state.currentGameLogic ?? WordChainGameLogic(wordLength: state.currentWordLength)
 
             if !chain.isEmpty {
-                GameCardView(
+                EnhancedGameCardView(
                     tilesCount: state.currentWordLength,
                     makeTile: { index in
                         AnyView(
@@ -366,6 +368,8 @@ struct FreeRoamView: View {
                             .buttonStyle(PlainButtonStyle())
                         )
                     },
+                    onUndo: { state.undoLastMove() },
+                    canUndo: state.canUndo
                 )
                 .frame(height: 270)
                 .padding(.top, 32)

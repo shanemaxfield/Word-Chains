@@ -55,6 +55,8 @@ struct CelebrationCardView: View {
     var minimumChainGroups: [[String]]? = nil
     var onWordLengthChange: ((Int) -> Void)? = nil
     var currentWordLength: Int = 4
+    var streakManager: StreakManager? = nil
+    var shareText: String? = nil
     @State private var selectedChainIndex: Int = 0
     @Namespace private var morphNamespace
     
@@ -94,6 +96,29 @@ struct CelebrationCardView: View {
                             .font(.system(size: 18, weight: .medium, design: .rounded))
                             .foregroundColor(Color("C_Charcoal"))
                     }
+                }
+
+                // Streak display (if provided)
+                if let streak = streakManager {
+                    HStack(spacing: 8) {
+                        Text(streak.getStreakEmoji())
+                            .font(.system(size: 20))
+                        Text("\(streak.currentStreak) Day Streak!")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(Color("C_WarmTeal"))
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(
+                        Capsule()
+                            .fill(Color("C_WarmTeal").opacity(0.1))
+                    )
+                }
+
+                // Share button (if provided)
+                if let text = shareText {
+                    ShareButton(shareText: text, label: "Share Result", icon: "square.and.arrow.up")
+                        .padding(.horizontal, 16)
                 }
             }
                     // Morphing Button <-> Minimum Chain Display

@@ -21,7 +21,7 @@ struct PuzzleOfTheDayView: View {
     @State private var chainMap: [Int: [String]] = [:]
     @FocusState private var focusedIndex: Int?
     @State private var resetTrigger: Bool = false
-    @EnvironmentObject var freeRoamState: GameState
+    @EnvironmentObject var gameState: EnhancedGameState
     @State private var gameLogicsByLength: [Int: WordChainGameLogic] = [:]
     @State private var showSuccess: Bool = false
     @State private var externalInvalidTriggers: [Int: Bool] = [:]
@@ -104,7 +104,7 @@ struct PuzzleOfTheDayView: View {
     }
 
     private var navigationOverlay: some View {
-        NavigationLink(destination: FreeRoamView().environmentObject(freeRoamState), isActive: $navigateToFreeRoam) { EmptyView() }
+        NavigationLink(destination: FreeRoamView().environmentObject(gameState), isActive: $navigateToFreeRoam) { EmptyView() }
     }
 
     private var mainContent: some View {
@@ -377,7 +377,9 @@ struct PuzzleOfTheDayView: View {
                         showCelebrationCard = false
                         showMinimumChain = false
                     },
-                    currentWordLength: wordLength
+                    currentWordLength: wordLength,
+                    streakManager: gameState.streakManager,
+                    shareText: generateShareText()
                 )
                 .zIndex(101)
             }
@@ -513,12 +515,50 @@ struct PuzzleOfTheDayView: View {
     private func showFinalCelebration() {
         isCelebrating = true
         celebrationStartTime = Date()
+
+        // Record streak and check achievements
+        let isPerfect = totalChangesMade == totalMinimumPossible
+        gameState.streakManager.recordPuzzleCompletion(isPerfect: isPerfect)
+        gameState.achievementManager.checkAchievements(
+            totalPuzzles: gameState.streakManager.totalPuzzlesCompleted,
+            perfectSolves: gameState.streakManager.perfectSolves,
+            currentStreak: gameState.streakManager.currentStreak,
+            isPerfectSolve: isPerfect,
+            solveTime: nil,
+            wordLength: wordLength
+        )
+
+        // Play celebration sounds
+        SoundManager.shared.playSound(.puzzleComplete)
+        SoundManager.shared.playSuccessPattern()
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             showCelebrationCard = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             isCelebrating = false
         }
+    }
+
+    private func generateShareText() -> String {
+        let efficiency = totalMinimumPossible == 0 ? 100 :
+            min(100, Int(Double(totalMinimumPossible) / Double(totalChangesMade) * 100))
+
+        let stars = efficiency >= 90 ? "⭐⭐⭐" : efficiency >= 75 ? "⭐⭐" : "⭐"
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d, yyyy"
+        let dateString = dateFormatter.string(from: Date())
+
+        return """
+        Word Chains - Daily Puzzle
+        \(dateString)
+        \(stars) \(totalChangesMade)/\(totalMinimumPossible) moves
+        \(wordLength)-letter puzzle
+        Efficiency: \(efficiency)%
+
+        Can you beat my score?
+        """
     }
 
     private func makeTile(index: Int) -> some View {
